@@ -906,6 +906,155 @@ POWER_CAPACITY = {
     },
 }
 
+# MW_BY_PURPOSE - feeds the Fair Value Calculator page. Splits each
+# company's power capacity by WHAT IT'S FOR (AI/HPC hosting vs. bitcoin
+# mining) rather than by stage (current/contracted/pipeline, which is what
+# POWER_CAPACITY tracks). Manually derived FROM POWER_CAPACITY plus targeted
+# follow-up research specifically on each company's bitcoin-mining MW
+# footprint (separate from its AI buildout) - same manual-snapshot caveats
+# as everything else in this file apply here too.
+#
+# ai_hosting_mw is current_mw + contracted_future_mw from POWER_CAPACITY
+# (deliberately EXCLUDING pipeline_mw - too speculative for a valuation
+# calculator) for every company where that whole POWER_CAPACITY entry is
+# AI-designated capacity. Two exceptions, both explained in their own
+# "note" below: Nebius (no current/contracted split exists, so its single
+# 5GW target is used instead, flagged as softer than the others) and
+# CleanSpark (POWER_CAPACITY's current_mw is explicitly BITCOIN MINING
+# power there, not AI - see its own note - so only the explicit 175MW
+# Sandersville lease is counted as AI here, not the full contracted_future_mw
+# figure, since the rest of that 992MW isn't broken out between AI and
+# further mining buildout).
+#
+# btc_mining_mw is the harder gap: of the 8 tracked companies, only 3 have
+# ANY usable figure. CoreWeave and Nebius are confirmed pure-play (0 - no
+# mining business at all). CleanSpark's is explicit and current (808MW,
+# from its own August 2026 operational update). Cipher Mining's is a STALE
+# 2025 estimate (~420MW across its non-Barber-Lake sites: Odessa 150 +
+# Black Pearl 150 + Alborz 40 + Bear 40 + Chief 40) - flagged because Black
+# Pearl has since started partially converting to AI capacity, so 420MW
+# likely OVERSTATES Cipher's current pure-mining footprint.
+#
+# For the remaining 4 (IREN, Core Scientific, Hut 8, TeraWulf), NO company
+# discloses a standalone bitcoin-mining MW figure at all as of Sep 2026 -
+# confirmed by direct research, not just an oversight here. All four blend
+# mining into a combined segment/revenue line with no MW split, and all
+# four describe actively winding down or repurposing their legacy mining
+# fleets into hosting capacity (IREN says mining is "effectively
+# discontinued by end of December 2026"). Their btc_mining_mw is left as
+# None (NOT zero - the fair value calculator treats None as $0 contribution
+# from mining, which UNDERSTATES these companies' current total value by
+# whatever their still-undisclosed residual mining capacity is worth -
+# flagged prominently in the calculator's UI, not silently absorbed).
+MW_BY_PURPOSE = {
+    "CoreWeave": {
+        "ai_hosting_mw": 3700,
+        "btc_mining_mw": 0,
+        "note": "Pure-play GPU/AI cloud company - no bitcoin mining business at all.",
+    },
+    "Nebius": {
+        "ai_hosting_mw": 5000,
+        "btc_mining_mw": 0,
+        "note": (
+            "Pure-play AI cloud company - no bitcoin mining. ai_hosting_mw uses Nebius's "
+            "single disclosed 'contracted power' TARGET (5GW by end of 2026) since it "
+            "doesn't disclose a current-vs-contracted split - softer/less certain than "
+            "the other companies' current+contracted figures."
+        ),
+    },
+    "IREN": {
+        "ai_hosting_mw": 300,
+        "btc_mining_mw": None,
+        "note": (
+            "ai_hosting_mw is IREN's 2026 delivery target (contracted_future_mw from "
+            "POWER_CAPACITY). btc_mining_mw is NOT disclosed as a standalone MW figure - "
+            "IREN states mining will be 'effectively discontinued by end of December "
+            "2026' as hardware is decommissioned to install GPUs, and reported $578.2M "
+            "of FY26 mining revenue, so there IS real current mining value not captured "
+            "here - treated as $0 in the calculator, which understates IREN's total."
+        ),
+    },
+    "Core Scientific": {
+        "ai_hosting_mw": 590,
+        "btc_mining_mw": None,
+        "note": (
+            "ai_hosting_mw is the full ~590MW CoreWeave colocation lease (current_mw + "
+            "contracted_future_mw from POWER_CAPACITY). btc_mining_mw (self-mining + "
+            "hosted mining) is NOT disclosed as a standalone MW figure - the company "
+            "says it's 'in the process of repurposing its remaining mining facilities' "
+            "into colocation, implying a shrinking but nonzero residual - treated as $0 "
+            "here, understating Core Scientific's total."
+        ),
+    },
+    "Hut 8": {
+        "ai_hosting_mw": 949,
+        "btc_mining_mw": None,
+        "note": (
+            "ai_hosting_mw is Hut 8's company-wide contracted IT capacity (current_mw + "
+            "contracted_future_mw from POWER_CAPACITY). btc_mining_mw is NOT disclosed "
+            "separately - Hut 8 blends 'ASIC Compute, AI Cloud, Traditional Cloud' into "
+            "one revenue line and doesn't give a standalone legacy-mining MW figure - "
+            "treated as $0 here, understating Hut 8's total by whatever its ASIC mining "
+            "fleet is worth."
+        ),
+    },
+    "TeraWulf": {
+        "ai_hosting_mw": 839,
+        "btc_mining_mw": None,
+        "note": (
+            "ai_hosting_mw is current_mw + contracted_future_mw from POWER_CAPACITY (Lake "
+            "Mariner Fluidstack + Justified Data Campus Anthropic lease). btc_mining_mw is "
+            "NOT disclosed as a standalone figure - TeraWulf says it is 'repurposing "
+            "portions of its legacy bitcoin mining footprint' without quantifying what's "
+            "left - treated as $0 here, understating TeraWulf's total by any remaining "
+            "self-mining capacity."
+        ),
+    },
+    "Cipher Mining": {
+        "ai_hosting_mw": 244,
+        "btc_mining_mw": 420,
+        "note": (
+            "ai_hosting_mw is the Barber Lake Fluidstack/Google AI site (contracted_future_"
+            "mw from POWER_CAPACITY). btc_mining_mw (~420MW) is a STALE 2025 estimate "
+            "across Cipher's other sites (Odessa 150 + Black Pearl 150 + Alborz 40 + Bear "
+            "40 + Chief 40) - the only one of the 4 non-pure-play miners here with ANY "
+            "mining MW figure at all, but likely OVERSTATED since Black Pearl has since "
+            "started partially converting to AI capacity as of Q2 2026 (not yet "
+            "re-measured)."
+        ),
+    },
+    "CleanSpark": {
+        "ai_hosting_mw": 175,
+        "btc_mining_mw": 808,
+        "note": (
+            "btc_mining_mw (808MW) is explicit and current - concurrent power drawn for "
+            "active mining, per CleanSpark's own August 2026 operational update. "
+            "ai_hosting_mw (175MW) is ONLY the explicit Sandersville lease - NOT the full "
+            "992MW contracted_future_mw from POWER_CAPACITY, since the remainder of that "
+            "992MW isn't broken out between further AI buildout and further mining "
+            "buildout - so CleanSpark's true AI capacity here may be understated if any "
+            "of that remainder turns out to be AI-designated."
+        ),
+    },
+}
+
+# JPMORGAN_MW_RATE_RANGES - reference $/MW valuation ranges from JPMorgan's
+# 2026 re-based sector framework (as reported in financial press coverage of
+# their research, not the primary report itself - see the earlier valuation-
+# methodology research this app's chat history is built on). Used as the
+# default slider bounds in the Fair Value Calculator. All in $ millions per
+# MW. JPM's own framework actually uses THREE tiers (critical-IT colocation
+# capacity $8-17M/MW, cloud-conversion capacity up to ~$19M/MW, pure bitcoin-
+# mining capacity $1-2M/MW) - the calculator simplifies the first two into
+# one "AI/HPC" band ($8-19M/MW) since the data here doesn't cleanly
+# distinguish "already-electrified mining site being converted to cloud"
+# from "purpose-built AI critical-IT capacity" the way JPM's own analysis
+# presumably does per-site.
+JPMORGAN_MW_RATE_RANGES = {
+    "ai_hosting": {"low": 8.0, "high": 19.0, "default": 13.0},
+    "btc_mining": {"low": 1.0, "high": 2.0, "default": 1.5},
+}
+
 # NOTE on operating_cash_flow / capex specifically: unlike revenue or the
 # balance-sheet concepts, SEC filers report CASH FLOW STATEMENT items as
 # YEAR-TO-DATE CUMULATIVE totals (e.g. "six months ended June 30"), not

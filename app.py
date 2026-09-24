@@ -18,6 +18,8 @@ from config import (
     COMPANY_DESCRIPTIONS,
     DATA_START_DATE,
     DEBT_SEGMENTS,
+    JPMORGAN_MW_RATE_RANGES,
+    MW_BY_PURPOSE,
     POWER_CAPACITY,
     RPO_FALLBACK_TAGS,
     RPO_WEB_SOURCED,
@@ -1680,6 +1682,173 @@ def render_comparison_view():
     )
 
 
+def render_fair_value_calculator():
+    """
+    Fair Value Calculator page - lets the user set their own $/MW
+    assumptions (defaulted from JPMorgan's 2026 sector re-basing, per
+    config.JPMORGAN_MW_RATE_RANGES) and computes an implied fair value per
+    company as (AI/HPC MW x AI rate) + (bitcoin-mining MW x mining rate),
+    compared against live market cap.
+
+    Deliberately a TWO-bucket simplification of JPM's actual THREE-tier
+    framework (see JPMORGAN_MW_RATE_RANGES's docstring) and deliberately
+    NOT a recommendation - see the extensive caveats rendered below the
+    table before reading too much into any single number here.
+    """
+    st.subheader("Fair Value Calculator: $/MW Valuation Framework")
+    st.caption(
+        "Modeled on how professional analysts increasingly value this sector - e.g. "
+        "JPMorgan's 2026 re-based framework, which prices contracted/deployed "
+        "critical-IT (AI/HPC) capacity at roughly $8-17M/MW depending on quality, "
+        "cloud-conversion capacity up to ~$19M/MW, and pure bitcoin-mining capacity at "
+        "just $1-2M/MW. This calculator simplifies JPM's first two tiers into one "
+        "'AI/HPC' band ($8-19M/MW) since the underlying MW data here doesn't cleanly "
+        "distinguish 'already-electrified mining site being converted' from "
+        "'purpose-built AI capacity' the way JPM's own per-site analysis presumably "
+        "does. Adjust the two rate sliders below to your own view - the defaults are "
+        "just the midpoint of JPM's reported ranges, not this app's recommendation."
+    )
+
+    ai_range = JPMORGAN_MW_RATE_RANGES["ai_hosting"]
+    btc_range = JPMORGAN_MW_RATE_RANGES["btc_mining"]
+    r_col1, r_col2 = st.columns(2)
+    ai_rate = r_col1.slider(
+        "AI/HPC capacity ($M per MW)",
+        min_value=ai_range["low"],
+        max_value=ai_range["high"],
+        value=ai_range["default"],
+        step=0.5,
+        key="fvc_ai_rate",
+    )
+    btc_rate = r_col2.slider(
+        "Bitcoin mining capacity ($M per MW)",
+        min_value=btc_range["low"],
+        max_value=btc_range["high"],
+        value=btc_range["default"],
+        step=0.1,
+        key="fvc_btc_rate",
+    )
+
+    rows = []
+    missing_mining_data = []
+    for name in COMPANIES:
+        purpose = MW_BY_PURPOSE.get(name)
+        if not purpose:
+            continue
+        ai_mw = purpose.get("ai_hosting_mw") or 0
+        btc_mw = purpose.get("btc_mining_mw")
+        if btc_mw is None:
+            missing_mining_data.append(name)
+            btc_mw = 0
+        ai_value = ai_mw * ai_rate * 1_000_000
+        btc_value = btc_mw * btc_rate * 1_000_000
+        fair_value = ai_value + btc_value
+        ticker = TICKERS.get(name)
+        market_cap = load_market_cap(ticker) if ticker else None
+        upside = ((fair_value / market_cap) - 1) * 100 if market_cap else None
+        rows.append(
+            {
+                "Company": name,
+                "AI/HPC MW": ai_mw,
+                "BTC Mining MW": purpose.get("btc_mining_mw"),
+                "Implied AI Value": ai_value,
+                "Implied Mining Value": btc_value,
+                "Implied Fair Value": fair_value,
+                "Market Cap": market_cap,
+                "Implied Upside/Downside": upside,
+            }
+        )
+
+    calc_df = pd.DataFrame(rows)
+    display_df = calc_df.copy()
+    display_df["AI/HPC MW"] = display_df["AI/HPC MW"].apply(format_mw)
+    display_df["BTC Mining MW"] = display_df["BTC Mining MW"].apply(
+        lambda v: format_mw(v) if pd.notna(v) else "not disclosed"
+    )
+    display_df["Implied AI Value"] = display_df["Implied AI Value"].apply(format_usd)
+    display_df["Implied Mining Value"] = display_df["Implied Mining Value"].apply(format_usd)
+    display_df["Implied Fair Value"] = display_df["Implied Fair Value"].apply(format_usd)
+    display_df["Market Cap"] = display_df["Market Cap"].apply(format_usd)
+    display_df["Implied Upside/Downside"] = display_df["Implied Upside/Downside"].apply(
+        lambda v: f"{v:+,.0f}%" if pd.notna(v) else "-"
+    )
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+    if missing_mining_data:
+        st.caption(
+            f"⚠️ {', '.join(missing_mining_data)}: no standalone bitcoin-mining MW figure "
+            "is disclosed anywhere for this company (confirmed by direct research, not "
+            "just missing here) - its mining contribution is treated as $0 above, which "
+            "UNDERSTATES its implied fair value by whatever residual mining capacity it "
+            "still has. See config.py's MW_BY_PURPOSE for what IS captured for each one."
+        )
+
+    chart_rows = calc_df.dropna(subset=["Market Cap"])
+    if not chart_rows.empty:
+        fv_fig = go.Figure()
+        fv_fig.add_trace(
+            go.Bar(
+                x=chart_rows["Company"],
+                y=chart_rows["Implied Fair Value"],
+                name="Implied Fair Value",
+                marker_color=ACCENT,
+                hovertemplate="%{x}<br>Implied Fair Value: %{customdata}<extra></extra>",
+                customdata=[format_usd(v) for v in chart_rows["Implied Fair Value"]],
+            )
+        )
+        fv_fig.add_trace(
+            go.Bar(
+                x=chart_rows["Company"],
+                y=chart_rows["Market Cap"],
+                name="Market Cap",
+                marker_color="#C9C9C9",
+                hovertemplate="%{x}<br>Market Cap: %{customdata}<extra></extra>",
+                customdata=[format_usd(v) for v in chart_rows["Market Cap"]],
+            )
+        )
+        fv_fig.update_layout(
+            title="Implied Fair Value vs. Market Cap",
+            xaxis_title=None,
+            yaxis_title="USD",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            yaxis=dict(gridcolor=GRID, tickprefix="$"),
+            xaxis=dict(showgrid=False),
+            barmode="group",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+            margin=dict(t=60, l=10, r=10, b=10),
+            height=440,
+        )
+        st.plotly_chart(fv_fig, use_container_width=True)
+
+    with st.expander("Read before using this for anything real"):
+        st.markdown(
+            "- **Not investment advice, and not JPMorgan's own model** - this is a "
+            "simplified, two-bucket reconstruction built from press coverage of their "
+            "framework, using MW figures this app manually compiled from public "
+            "disclosures. It is not their proprietary per-site analysis.\n"
+            "- **MW figures are a dated snapshot** (see the Power Capacity section - "
+            "each company as of its own most recent disclosure, dates vary) using only "
+            "current + contracted-future MW, deliberately excluding pipeline/diligence-"
+            "stage capacity as too speculative to price.\n"
+            "- **Several companies' mining MW is unknown, not zero** - flagged above; "
+            "their implied fair value is a floor, not a full picture.\n"
+            "- **Uses Market Cap, not Enterprise Value** - ignores each company's net "
+            "debt/cash entirely, unlike a true EV-based $/MW comparison.\n"
+            "- **A single blended rate per bucket, applied to every company** - JPM's "
+            "own framework applies COMPANY-SPECIFIC rates within each range based on "
+            "capacity quality and counterparty credit (e.g. an investment-grade "
+            "hyperscaler lease vs. an unrated private AI lab) - this calculator can't "
+            "replicate that judgment, it only lets you pick one rate per bucket for "
+            "everyone.\n"
+            "- **Nebius's AI/HPC MW is a company-stated TARGET**, not a current+"
+            "contracted breakdown like the other companies - softer than the rest.\n"
+            "- Cross-reference with the Compare Companies page's Valuation Snapshot, "
+            "RPO, and Forward EBITDA sections before drawing any conclusion - this is "
+            "one lens among several, not a replacement for them."
+        )
+
+
 def render_company_summary(company: str, ticker: str | None):
     """
     Header at the top of each company's Single Company page: a short
@@ -1757,7 +1926,9 @@ def render_company_summary(company: str, ticker: str | None):
 
 st.title("NeoCloud Research")
 
-view = st.sidebar.radio("View", ["Compare Companies", "Single Company"], index=0)
+view = st.sidebar.radio(
+    "View", ["Compare Companies", "Single Company", "Fair Value Calculator"], index=0
+)
 st.sidebar.markdown("---")
 st.sidebar.caption(
     "Private neoclouds (Crusoe, Together AI, etc.) don't file with the SEC, "
@@ -1768,6 +1939,9 @@ st.sidebar.caption(
 if view == "Compare Companies":
     st.caption("Side-by-side comparison across every tracked neocloud, metric by metric.")
     render_comparison_view()
+elif view == "Fair Value Calculator":
+    st.caption("A $/MW-based valuation model, adjustable to your own assumptions.")
+    render_fair_value_calculator()
 else:
     company = st.sidebar.selectbox("Company", options=list(COMPANIES.keys()))
     cik = COMPANIES[company]
