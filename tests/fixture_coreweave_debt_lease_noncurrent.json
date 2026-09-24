@@ -1,0 +1,11 @@
+{
+  "cik": 1769628, "taxonomy": "us-gaap", "tag": "FinanceLeaseLiabilityNoncurrent",
+  "label": "Finance Lease, Liability, Noncurrent", "entityName": "CoreWeave, Inc.",
+  "units": {
+    "USD": [
+      {"end": "2025-03-31", "val": 18814000, "fy": 2025, "fp": "Q1", "form": "10-Q", "filed": "2025-05-15", "frame": "CY2025Q1I"},
+      {"end": "2025-06-30", "val": 3112000, "fy": 2025, "fp": "Q2", "form": "10-Q", "filed": "2025-08-13", "frame": "CY2025Q2I"},
+      {"end": "2025-12-31", "val": 216000000, "fy": 2025, "fp": "FY", "form": "10-K", "filed": "2026-03-02", "frame": "CY2025Q4I"}
+    ]
+  }
+}

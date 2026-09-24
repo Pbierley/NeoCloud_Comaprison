@@ -1,0 +1,21 @@
+{
+  "cik": 1769628,
+  "taxonomy": "us-gaap",
+  "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
+  "label": "Revenue from Contract with Customer, Excluding Assessed Tax",
+  "entityName": "CoreWeave, Inc.",
+  "units": {
+    "USD": [
+      {"start": "2024-01-01", "end": "2024-03-31", "val": 188700000, "fy": 2024, "fp": "Q1", "form": "10-Q", "filed": "2025-05-15", "frame": "CY2024Q1"},
+      {"start": "2024-01-01", "end": "2024-03-31", "val": 188700000, "fy": 2025, "fp": "Q1", "form": "10-Q", "filed": "2025-05-15", "frame": "CY2024Q1I"},
+      {"start": "2024-04-01", "end": "2024-06-30", "val": 395400000, "fy": 2024, "fp": "Q2", "form": "10-Q", "filed": "2025-08-13", "frame": "CY2024Q2"},
+      {"start": "2024-07-01", "end": "2024-09-30", "val": 583900000, "fy": 2024, "fp": "Q3", "form": "10-Q", "filed": "2025-11-13", "frame": "CY2024Q3"},
+      {"start": "2025-01-01", "end": "2025-03-31", "val": 981600000, "fy": 2025, "fp": "Q1", "form": "10-Q", "filed": "2025-05-15", "frame": "CY2025Q1"},
+      {"start": "2025-04-01", "end": "2025-06-30", "val": 1212000000, "fy": 2025, "fp": "Q2", "form": "10-Q", "filed": "2025-08-13", "frame": "CY2025Q2"},
+      {"start": "2025-04-01", "end": "2025-06-30", "val": 1212000000, "fy": 2025, "fp": "Q2", "form": "10-Q/A", "filed": "2025-08-20", "frame": "CY2025Q2"},
+      {"start": "2025-07-01", "end": "2025-09-30", "val": 1360000000, "fy": 2025, "fp": "Q3", "form": "10-Q", "filed": "2025-11-13", "frame": "CY2025Q3"},
+      {"start": "2026-04-01", "end": "2026-06-30", "val": 2575000000, "fy": 2026, "fp": "Q2", "form": "10-Q", "filed": "2026-08-11", "frame": "CY2026Q2"},
+      {"start": "2024-01-01", "end": "2024-12-31", "val": 1918000000, "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2025-03-01", "frame": "CY2024"}
+    ]
+  }
+}

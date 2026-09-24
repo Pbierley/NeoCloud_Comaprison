@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xbrl xmlns="http://www.xbrl.org/2003/instance"
+      xmlns:xbrli="http://www.xbrl.org/2003/instance"
+      xmlns:crwv="http://coreweave.com/20260630"
+      xmlns:us-gaap="http://fasb.org/us-gaap/2026"
+      xmlns:xbrldi="http://xbrl.org/2006/xbrldi">
+
+  <!-- Plain instant context: June 30, 2026 balance sheet date -->
+  <context id="c-1">
+    <entity>
+      <identifier scheme="http://www.sec.gov/CIK">0001769628</identifier>
+    </entity>
+    <period>
+      <instant>2026-06-30</instant>
+    </period>
+  </context>
+
+  <!-- Plain instant context: comparative period, Dec 31, 2025 -->
+  <context id="c-2">
+    <entity>
+      <identifier scheme="http://www.sec.gov/CIK">0001769628</identifier>
+    </entity>
+    <period>
+      <instant>2025-12-31</instant>
+    </period>
+  </context>
+
+  <!-- Dimensional context: same June 30 2026 date but broken out by a
+       facility/member axis - a sub-breakdown, NOT the top-level total, and
+       must be skipped by the parser. -->
+  <context id="c-3-dimensional">
+    <entity>
+      <identifier scheme="http://www.sec.gov/CIK">0001769628</identifier>
+      <segment>
+        <xbrldi:explicitMember dimension="crwv:DebtInstrumentAxis">crwv:TermLoanAMember</xbrldi:explicitMember>
+      </segment>
+    </entity>
+    <period>
+      <instant>2026-06-30</instant>
+    </period>
+  </context>
+
+  <!-- Target facts: the two custom tags we care about -->
+  <crwv:RecourseDebtCurrent contextRef="c-1" unitRef="usd" decimals="-6">6235000000</crwv:RecourseDebtCurrent>
+  <crwv:RecourseDebtCurrent contextRef="c-2" unitRef="usd" decimals="-6">6118000000</crwv:RecourseDebtCurrent>
+  <crwv:NonRecourseDebtCurrent contextRef="c-1" unitRef="usd" decimals="-6">1278000000</crwv:NonRecourseDebtCurrent>
+  <crwv:NonRecourseDebtCurrent contextRef="c-2" unitRef="usd" decimals="-6">590000000</crwv:NonRecourseDebtCurrent>
+
+  <!-- A dimensional fact for the SAME tag/date - must be excluded from
+       results since its context has a segment. -->
+  <crwv:RecourseDebtCurrent contextRef="c-3-dimensional" unitRef="usd" decimals="-6">4000000000</crwv:RecourseDebtCurrent>
+
+  <!-- An unrelated standard tag, included to confirm the parser only
+       returns what it's asked for. -->
+  <us-gaap:Assets contextRef="c-1" unitRef="usd" decimals="-6">55570000000</us-gaap:Assets>
+</xbrl>

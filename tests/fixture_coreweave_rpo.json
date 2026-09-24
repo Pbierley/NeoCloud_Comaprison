@@ -1,0 +1,14 @@
+{
+  "cik": 1769628, "taxonomy": "us-gaap", "tag": "RevenueRemainingPerformanceObligation",
+  "label": "Revenue, Remaining Performance Obligation", "entityName": "CoreWeave, Inc.",
+  "units": {
+    "USD": [
+      {"end": "2025-03-31", "val": 14700000000, "fy": 2025, "fp": "Q1", "form": "10-Q", "filed": "2025-05-15"},
+      {"end": "2025-06-30", "val": 30100000000, "fy": 2025, "fp": "Q2", "form": "10-Q", "filed": "2025-08-13"},
+      {"end": "2025-09-30", "val": 50000000000, "fy": 2025, "fp": "Q3", "form": "10-Q", "filed": "2025-11-13"},
+      {"end": "2025-12-31", "val": 60700000000, "fy": 2025, "fp": "FY", "form": "10-K", "filed": "2026-03-02"},
+      {"end": "2026-03-31", "val": 98800000000, "fy": 2026, "fp": "Q1", "form": "10-Q", "filed": "2026-05-08"},
+      {"end": "2026-06-30", "val": 103700000000, "fy": 2026, "fp": "Q2", "form": "10-Q", "filed": "2026-08-12"}
+    ]
+  }
+}
