@@ -602,23 +602,54 @@ RPO_WEB_SOURCED = {
 #     CoreWeave), Digital asset self-mining, Digital asset hosted mining
 #     (mining-as-a-service for other customers). All three are real face-of-
 #     income-statement lines.
-#   - TeraWulf: two lines - Digital asset (bitcoin mining) revenue and HPC
+#   - TeraWulf: two lines - "Digital Assets Revenue" (bitcoin mining,
+#     labeled to match TeraWulf's own income-statement line name) and HPC
 #     lease revenue (Fluidstack/Anthropic hosting). HPC lease revenue is
 #     ACTUALLY live-pullable via the standard `us-gaap:OperatingLeaseLeaseIncome`
 #     tag (confirmed default-context, non-dimensional) - only the mining
 #     side needed manual sourcing - but both are kept here together for one
 #     consistent chart rather than half-live/half-manual.
+#   - IREN: two lines - "AI Cloud Services revenue" and "Bitcoin Mining
+#     revenue," both real face-of-income-statement lines, confirmed via
+#     IREN's own quarterly earnings press releases (extracted via WebFetch
+#     of the releases as mirrored on globenewswire.com/nasdaq.com/IREN's own
+#     IR site - NOT independently re-derived from raw 10-Q/10-K XBRL, so
+#     treat as press-release-reported rather than filing-verified to the
+#     exact dollar, a notch less rigorous than Core Scientific/TeraWulf
+#     above). Notable trend: AI Cloud revenue was under $10M/quarter through
+#     Q1 FY2026 before scaling sharply, while Bitcoin Mining revenue has
+#     fallen every quarter since (consistent with IREN's own statement, also
+#     used in POWER_CAPACITY/MW_BY_PURPOSE, that it expects mining
+#     "effectively discontinued by end of December 2026").
 # Deliberately NOT included, and why:
 #   - Cipher Mining and CleanSpark: as of the last check (Sep 2026), both
 #     still report a SINGLE consolidated bitcoin-mining revenue line -
 #     their new AI/HPC hosting deals (Cipher's Black Pearl lease started
 #     Aug 2026, CleanSpark's Sandersville lease is even newer) hadn't yet
 #     produced a reportable revenue split. Worth adding once they do.
-#   - Hut 8: reports revenue by business line (Power / Digital
-#     Infrastructure / Compute), but bitcoin SELF-mining doesn't appear as a
-#     revenue line at all - its economics flow through a "gain/loss on
-#     digital assets" line instead - so there's no clean "mining revenue vs.
-#     AI revenue" split to show the way Core Scientific/TeraWulf have.
+#
+# One company included DESPITE not having a clean split, because it's still
+# useful as a real $ breakdown even if not a clean AI-vs-BTC dichotomy:
+#   - Hut 8: reports revenue across three segments - Power (energy
+#     generation/managed services), Digital Infrastructure (colocation/
+#     hosting), and Compute. Compute is NOT bitcoin-mining-only - Hut 8
+#     blends ASIC bitcoin mining, AI/GPU cloud (Highrise AI), and
+#     "traditional cloud" into that single segment and does not disclose a
+#     dollar split between them (confirmed absent from its 10-Q segment
+#     footnote). Hut 8's own Q2 2026 earnings materials attribute a $38.2M
+#     YoY increase in Compute revenue "primarily" to ASIC bitcoin-mining
+#     growth (more BTC mined off higher operating capacity), but that's a
+#     qualitative attribution, not a dollar-level split - so unlike Core
+#     Scientific/TeraWulf/IREN above, Hut 8's segments here are labeled and
+#     charted as what they actually are (Compute/Digital Infrastructure/
+#     Power), NOT relabeled into "AI" vs "Bitcoin Mining" buckets, and it is
+#     deliberately excluded from the AI-hosting-share comparison chart
+#     (_is_ai_segment_label won't match any of its three real segment names)
+#     since that comparison assumes a clean two-way split Hut 8 doesn't
+#     report. Figures cross-checked against Hut 8's own quarterly press
+#     releases (GlobeNewswire/PR Newswire) and 10-Q accession numbers where
+#     available - press-release-reported rather than independently
+#     re-derived from raw XBRL, same rigor tier as IREN above.
 #
 # Each entry: period_end (YYYY-MM-DD, fiscal quarter end), segments (dict of
 # {line item label: USD value} - summed for the chart's "total"), source.
@@ -627,11 +658,14 @@ SEGMENT_REVENUE_SPLIT = {
         {
             "period_end": "2025-06-30",
             "segments": {
-                "AI/HPC Hosting (Colocation)": 10_600_000,
-                "Bitcoin Self-Mining": 62_400_000,
-                "Bitcoin Hosted Mining": 5_600_000,
+                "AI/HPC Hosting (Colocation)": 10_560_000,
+                "Bitcoin Self-Mining": 62_424_000,
+                "Bitcoin Hosted Mining": 5_644_000,
             },
-            "source": "8-K Ex-99.1 earnings release, filed 2025-08-08",
+            "source": (
+                "8-K Ex-99.1 earnings release, filed 2025-08-08. Exact figures per "
+                "user-supplied 10-Q comparative-statement table (Sep 2026)."
+            ),
         },
         {
             "period_end": "2025-09-30",
@@ -654,20 +688,28 @@ SEGMENT_REVENUE_SPLIT = {
         {
             "period_end": "2026-03-31",
             "segments": {
-                "AI/HPC Hosting (Colocation)": 77_500_000,
-                "Bitcoin Self-Mining": 30_100_000,
+                "AI/HPC Hosting (Colocation)": 77_539_000,
+                "Bitcoin Self-Mining": 30_105_000,
                 "Bitcoin Hosted Mining": 7_600_000,
             },
-            "source": "8-K Ex-99.1 earnings release, filed 2026-05-06",
+            "source": (
+                "8-K Ex-99.1 earnings release, filed 2026-05-06. Exact figures per "
+                "user-supplied 10-Q comparative-statement table (Sep 2026)."
+            ),
         },
         {
             "period_end": "2026-06-30",
             "segments": {
-                "AI/HPC Hosting (Colocation)": 136_700_000,
-                "Bitcoin Self-Mining": 21_500_000,
-                "Bitcoin Hosted Mining": 6_000_000,
+                "AI/HPC Hosting (Colocation)": 136_669_000,
+                "Bitcoin Self-Mining": 21_535_000,
+                "Bitcoin Hosted Mining": 5_997_000,
             },
-            "source": "8-K Ex-99.1 earnings release (Q2 2026 results)",
+            "source": (
+                "8-K Ex-99.1 earnings release (Q2 2026 results). Exact figures per "
+                "user-supplied 10-Q comparative-statement table (Sep 2026); this "
+                "quarter's colocation + self-mining figures also tie out exactly to "
+                "the 10-Q's six-months-ended totals ($214,208k and $51,640k)."
+            ),
         },
     ],
     "TeraWulf": [
@@ -675,7 +717,7 @@ SEGMENT_REVENUE_SPLIT = {
             "period_end": "2025-06-30",
             "segments": {
                 "AI/HPC Hosting (HPC Lease)": 0,
-                "Bitcoin Mining": 47_600_000,
+                "Digital Assets Revenue": 47_600_000,
             },
             "source": (
                 "8-K Ex-99.1 earnings release, filed 2025-08-08 - HPC/WULF Den revenue "
@@ -687,7 +729,7 @@ SEGMENT_REVENUE_SPLIT = {
             "period_end": "2025-09-30",
             "segments": {
                 "AI/HPC Hosting (HPC Lease)": 7_200_000,
-                "Bitcoin Mining": 43_400_000,
+                "Digital Assets Revenue": 43_400_000,
             },
             "source": "10-Q for period ended 2025-09-30, filed 2025-11-10",
         },
@@ -695,7 +737,7 @@ SEGMENT_REVENUE_SPLIT = {
             "period_end": "2025-12-31",
             "segments": {
                 "AI/HPC Hosting (HPC Lease)": 9_700_000,
-                "Bitcoin Mining": 26_100_000,
+                "Digital Assets Revenue": 26_100_000,
             },
             "source": "8-K Ex-99.1 earnings release, filed 2026-02-26",
         },
@@ -703,7 +745,7 @@ SEGMENT_REVENUE_SPLIT = {
             "period_end": "2026-03-31",
             "segments": {
                 "AI/HPC Hosting (HPC Lease)": 21_000_000,
-                "Bitcoin Mining": 13_000_000,
+                "Digital Assets Revenue": 13_000_000,
             },
             "source": "8-K Ex-99.1 earnings release, filed 2026-05-08",
         },
@@ -711,7 +753,7 @@ SEGMENT_REVENUE_SPLIT = {
             "period_end": "2026-06-30",
             "segments": {
                 "AI/HPC Hosting (HPC Lease)": 31_900_000,
-                "Bitcoin Mining": 12_800_000,
+                "Digital Assets Revenue": 12_800_000,
             },
             "source": (
                 "8-K Ex-99.1 earnings release (Q2 2026 results). The HPC lease figure "
@@ -719,6 +761,109 @@ SEGMENT_REVENUE_SPLIT = {
                 "($31,932,000) - the one segment line in this whole dict that's "
                 "independently verifiable via a real API call rather than resting on "
                 "the earnings-release transcription alone."
+            ),
+        },
+    ],
+    "IREN": [
+        {
+            "period_end": "2025-06-30",
+            "segments": {
+                "AI Cloud Services": 7_000_000,
+                "Bitcoin Mining": 180_300_000,
+            },
+            "source": "'IREN Reports Full Year FY25 Results' press release, 2025-08-28",
+        },
+        {
+            "period_end": "2025-09-30",
+            "segments": {
+                "AI Cloud Services": 7_300_000,
+                "Bitcoin Mining": 232_900_000,
+            },
+            "source": "'IREN Reports Q1 FY26 Results' press release, ~Nov 2025",
+        },
+        {
+            "period_end": "2025-12-31",
+            "segments": {
+                "AI Cloud Services": 17_300_000,
+                "Bitcoin Mining": 167_400_000,
+            },
+            "source": "'IREN Reports Q2 FY26 Results' press release, 2026-02-05",
+        },
+        {
+            "period_end": "2026-03-31",
+            "segments": {
+                "AI Cloud Services": 33_600_000,
+                "Bitcoin Mining": 111_200_000,
+            },
+            "source": "'IREN Business Update and Q3 FY26 Results' press release, 2026-05-07",
+        },
+        {
+            "period_end": "2026-06-30",
+            "segments": {
+                "AI Cloud Services": 70_500_000,
+                "Bitcoin Mining": 66_700_000,
+            },
+            "source": "'IREN Reports FY26 Results' press release, 2026-08-27 (user-supplied figures, confirmed against the release)",
+        },
+    ],
+    # Hut 8's three REAL reported segments - see the doc-comment above for
+    # why these are NOT relabeled into an "AI vs. Bitcoin" split the way the
+    # other companies above are (Compute blends bitcoin mining + AI/GPU
+    # cloud, undisclosed dollar-for-dollar). Cross-checked against Hut 8's
+    # own quarterly press releases; the Q2 2026 Compute figure ties out
+    # exactly to Hut 8's own stated "$38.2 million year-over-year increase"
+    # in Compute revenue (72.5M - 34.3M = 38.2M).
+    "Hut 8": [
+        {
+            "period_end": "2025-06-30",
+            "segments": {
+                "Compute (BTC Mining + AI/GPU Cloud, Blended)": 34_300_000,
+                "Digital Infrastructure (Hosting)": 1_500_000,
+                "Power (Generation & Managed Services)": 5_500_000,
+            },
+            "source": "'Hut 8 Reports Second Quarter 2025 Results', GlobeNewswire, 2025-08-07",
+        },
+        {
+            "period_end": "2025-09-30",
+            "segments": {
+                "Compute (BTC Mining + AI/GPU Cloud, Blended)": 70_000_000,
+                "Digital Infrastructure (Hosting)": 5_100_000,
+                "Power (Generation & Managed Services)": 8_400_000,
+            },
+            "source": "'Hut 8 Reports Third Quarter 2025 Results', PR Newswire, 2025-11-04",
+        },
+        {
+            "period_end": "2025-12-31",
+            "segments": {
+                "Compute (BTC Mining + AI/GPU Cloud, Blended)": 81_900_000,
+                "Digital Infrastructure (Hosting)": 1_600_000,
+                "Power (Generation & Managed Services)": 5_000_000,
+            },
+            "source": "'Hut 8 Reports Fourth Quarter and Full Year 2025 Results', PR Newswire, ~Feb 2026",
+        },
+        {
+            "period_end": "2026-03-31",
+            "segments": {
+                "Compute (BTC Mining + AI/GPU Cloud, Blended)": 66_000_000,
+                "Digital Infrastructure (Hosting)": 1_300_000,
+                "Power (Generation & Managed Services)": 3_700_000,
+            },
+            "source": "'Hut 8 Reports First Quarter 2026 Results', PR Newswire, 2026-05",
+        },
+        {
+            "period_end": "2026-06-30",
+            "segments": {
+                "Compute (BTC Mining + AI/GPU Cloud, Blended)": 72_500_000,
+                "Digital Infrastructure (Hosting)": 1_300_000,
+                "Power (Generation & Managed Services)": 1_200_000,
+            },
+            "source": (
+                "'Hut 8 Reports Second Quarter 2026 Results', PR Newswire. Note: an "
+                "additional ~$27.0M of colocation revenue was generated this quarter by "
+                "the unconsolidated King Mountain Joint Venture, booked as equity-method "
+                "earnings rather than consolidated revenue - NOT included in the "
+                "Digital Infrastructure figure above, so Hut 8's true AI/HPC-hosting "
+                "scale is understated here."
             ),
         },
     ],
@@ -907,12 +1052,38 @@ POWER_CAPACITY = {
 }
 
 # MW_BY_PURPOSE - feeds the Fair Value Calculator page. Splits each
-# company's power capacity by WHAT IT'S FOR (AI/HPC hosting vs. bitcoin
-# mining) rather than by stage (current/contracted/pipeline, which is what
-# POWER_CAPACITY tracks). Manually derived FROM POWER_CAPACITY plus targeted
-# follow-up research specifically on each company's bitcoin-mining MW
-# footprint (separate from its AI buildout) - same manual-snapshot caveats
-# as everything else in this file apply here too.
+# company's power capacity by WHAT IT'S FOR rather than by stage (current/
+# contracted/pipeline, which is what POWER_CAPACITY tracks). Manually
+# derived FROM POWER_CAPACITY plus targeted follow-up research specifically
+# on each company's bitcoin-mining MW footprint (separate from its AI
+# buildout) - same manual-snapshot caveats as everything else in this file
+# apply here too.
+#
+# THREE categories, not two (added Sep 2026, prompted by a user catch on
+# Core Scientific): owned bitcoin mining and hosted bitcoin mining are
+# economically completely different businesses that happen to both look
+# like "bitcoin mining MW" in a press release, and conflating them
+# overstates or understates value depending which way you get it wrong:
+#   - ai_hosting_mw: capacity hosting AI/HPC/GPU-cloud customers. Company
+#     collects a hosting/lease fee; doesn't own the GPUs.
+#   - owned_btc_mining_mw: capacity where the COMPANY ITSELF owns the ASIC
+#     miners and mines bitcoin for its own account - full exposure to BTC
+#     price and network difficulty, the "pure bitcoin mining" tier JPMorgan
+#     prices at $1-2M/MW.
+#   - hosted_btc_mining_mw: capacity where the company hosts THIRD-PARTY-
+#     OWNED ASIC miners and collects a hosting fee - economically a
+#     colocation/service business, like ai_hosting_mw, but for a much more
+#     commoditized, cyclical, lower-margin customer (bitcoin miners, not AI
+#     hyperscalers). Confirmed via direct research (Sep 2026): NO analyst
+#     report or comparable transaction publishes a $/MW benchmark for this
+#     category specifically - JPMorgan's framework only has the two tiers
+#     above, not a third for ASIC-hosting-as-a-service. So this category is
+#     NOT priced with a $/MW rate in the calculator at all - it's priced off
+#     each company's own disclosed hosted-mining REVENUE (from
+#     SEGMENT_REVENUE_SPLIT, where available) times a user-adjustable
+#     revenue multiple, since that's the only real number that exists for
+#     it. See render_fair_value_calculator's docstring in app.py for exactly
+#     how that calculation works and its own caveats.
 #
 # ai_hosting_mw is current_mw + contracted_future_mw from POWER_CAPACITY
 # (deliberately EXCLUDING pipeline_mw - too speculative for a valuation
@@ -926,35 +1097,49 @@ POWER_CAPACITY = {
 # figure, since the rest of that 992MW isn't broken out between AI and
 # further mining buildout).
 #
-# btc_mining_mw is the harder gap: of the 8 tracked companies, only 3 have
-# ANY usable figure. CoreWeave and Nebius are confirmed pure-play (0 - no
-# mining business at all). CleanSpark's is explicit and current (808MW,
-# from its own August 2026 operational update). Cipher Mining's is a STALE
-# 2025 estimate (~420MW across its non-Barber-Lake sites: Odessa 150 +
-# Black Pearl 150 + Alborz 40 + Bear 40 + Chief 40) - flagged because Black
-# Pearl has since started partially converting to AI capacity, so 420MW
-# likely OVERSTATES Cipher's current pure-mining footprint.
+# owned_btc_mining_mw is the harder gap: of the 8 tracked companies, only 2
+# have ANY usable figure. CoreWeave and Nebius are confirmed pure-play (0 -
+# no mining business at all). CleanSpark's is explicit and current (808MW,
+# from its own August 2026 operational update - CleanSpark mines with its
+# own owned rigs, not a hosting model). Cipher Mining's is a STALE 2025
+# estimate (~420MW across its non-Barber-Lake sites: Odessa 150 + Black
+# Pearl 150 + Alborz 40 + Bear 40 + Chief 40, all self-owned/self-operated
+# mining) - flagged because Black Pearl has since started partially
+# converting to AI capacity, so 420MW likely OVERSTATES Cipher's current
+# pure-mining footprint.
 #
 # For the remaining 4 (IREN, Core Scientific, Hut 8, TeraWulf), NO company
-# discloses a standalone bitcoin-mining MW figure at all as of Sep 2026 -
-# confirmed by direct research, not just an oversight here. All four blend
-# mining into a combined segment/revenue line with no MW split, and all
-# four describe actively winding down or repurposing their legacy mining
+# discloses a standalone OWNED-bitcoin-mining MW figure - confirmed by
+# direct research. All four blend owned mining into a combined segment/
+# revenue line with no MW split (Core Scientific's small "Bitcoin Self-
+# Mining" revenue line, e.g., has no matching MW figure anywhere), and all
+# four describe actively winding down or repurposing legacy owned-mining
 # fleets into hosting capacity (IREN says mining is "effectively
-# discontinued by end of December 2026"). Their btc_mining_mw is left as
-# None (NOT zero - the fair value calculator treats None as $0 contribution
-# from mining, which UNDERSTATES these companies' current total value by
-# whatever their still-undisclosed residual mining capacity is worth -
-# flagged prominently in the calculator's UI, not silently absorbed).
+# discontinued by end of December 2026"). Their owned_btc_mining_mw is left
+# as None (NOT zero - the fair value calculator treats None as $0
+# contribution, which UNDERSTATES these companies' current total value by
+# whatever their still-undisclosed residual OWNED mining capacity is worth
+# - flagged prominently in the calculator's UI, not silently absorbed).
+#
+# hosted_btc_mining_mw: only Core Scientific has one (~400MW, added Sep
+# 2026, user-supplied and confirmed against press coverage) - see its own
+# note. Every other company is 0, not None, because each has been
+# positively confirmed as either a pure AI play with no mining business at
+# all (CoreWeave, Nebius) or a self-mining operator that owns its own rigs
+# rather than hosting third parties' (IREN, Hut 8, TeraWulf, Cipher Mining,
+# CleanSpark) - there is no known third-party-ASIC-hosting business at any
+# of them.
 MW_BY_PURPOSE = {
     "CoreWeave": {
         "ai_hosting_mw": 3700,
-        "btc_mining_mw": 0,
+        "owned_btc_mining_mw": 0,
+        "hosted_btc_mining_mw": 0,
         "note": "Pure-play GPU/AI cloud company - no bitcoin mining business at all.",
     },
     "Nebius": {
         "ai_hosting_mw": 5000,
-        "btc_mining_mw": 0,
+        "owned_btc_mining_mw": 0,
+        "hosted_btc_mining_mw": 0,
         "note": (
             "Pure-play AI cloud company - no bitcoin mining. ai_hosting_mw uses Nebius's "
             "single disclosed 'contracted power' TARGET (5GW by end of 2026) since it "
@@ -964,76 +1149,115 @@ MW_BY_PURPOSE = {
     },
     "IREN": {
         "ai_hosting_mw": 300,
-        "btc_mining_mw": None,
+        "owned_btc_mining_mw": None,
+        "hosted_btc_mining_mw": 0,
         "note": (
             "ai_hosting_mw is IREN's 2026 delivery target (contracted_future_mw from "
-            "POWER_CAPACITY). btc_mining_mw is NOT disclosed as a standalone MW figure - "
-            "IREN states mining will be 'effectively discontinued by end of December "
-            "2026' as hardware is decommissioned to install GPUs, and reported $578.2M "
-            "of FY26 mining revenue, so there IS real current mining value not captured "
-            "here - treated as $0 in the calculator, which understates IREN's total."
+            "POWER_CAPACITY). owned_btc_mining_mw is NOT disclosed as a standalone MW "
+            "figure - IREN states mining will be 'effectively discontinued by end of "
+            "December 2026' as hardware is decommissioned to install GPUs, and reported "
+            "$578.2M of FY26 mining revenue, so there IS real current mining value not "
+            "captured here - treated as $0 in the calculator, which understates IREN's "
+            "total. IREN mines with its own owned rigs (no third-party hosting business), "
+            "so hosted_btc_mining_mw is 0, not a missing figure."
         ),
     },
     "Core Scientific": {
-        "ai_hosting_mw": 590,
-        "btc_mining_mw": None,
+        "ai_hosting_mw": 900,
+        "owned_btc_mining_mw": None,
+        "hosted_btc_mining_mw": 400,
         "note": (
-            "ai_hosting_mw is the full ~590MW CoreWeave colocation lease (current_mw + "
-            "contracted_future_mw from POWER_CAPACITY). btc_mining_mw (self-mining + "
-            "hosted mining) is NOT disclosed as a standalone MW figure - the company "
-            "says it's 'in the process of repurposing its remaining mining facilities' "
-            "into colocation, implying a shrinking but nonzero residual - treated as $0 "
-            "here, understating Core Scientific's total."
+            "Updated Sep 2026, corrected after a user catch: the ~400MW figure "
+            "originally logged here as generic 'bitcoin mining' is HOSTED mining - Core "
+            "Scientific provides power/space/infrastructure for THIRD-PARTY-OWNED ASIC "
+            "miners and collects a hosting fee, the same colocation-landlord model as "
+            "its CoreWeave/AMD AI business, just for a bitcoin-mining customer instead of "
+            "an AI one. Core Scientific does NOT own those 400MW of miners. Separately, "
+            "Core Scientific also has a small OWNED self-mining business (its own 'Bitcoin "
+            "Self-Mining' revenue line, ~$21.5M in Q2 2026) - but no MW figure for that "
+            "owned fleet is disclosed anywhere, so owned_btc_mining_mw is None (not "
+            "zero), same 'known gap' treatment as IREN/Hut 8/TeraWulf. Total contracted "
+            "power portfolio is ~1.3GW: ~900MW HPC/AI (CoreWeave colocation lease across "
+            "5 sites PLUS a newer AMD AI hosting deal announced Jul 2026, which is what "
+            "pushed this up from the ~590MW CoreWeave-only estimate used previously) plus "
+            "~400MW hosted mining. Management has stated a long-term strategy of "
+            "transitioning more of the hosted-mining MW toward AI/colocation workloads "
+            "over time, so treat 400MW as a point-in-time snapshot, not a floor. "
+            "ai_hosting_mw here is somewhat softer than the current_mw/contracted_future_"
+            "mw split in POWER_CAPACITY (which still reflects only the CoreWeave lease's "
+            "own billing ramp) - use POWER_CAPACITY for the CoreWeave-specific "
+            "stage-by-stage view and this 900/400 split for the whole-portfolio picture. "
+            "See render_fair_value_calculator in app.py for how hosted_btc_mining_mw is "
+            "actually priced (a revenue multiple, not a $/MW rate - no $/MW benchmark for "
+            "ASIC-hosting-as-a-service exists anywhere, confirmed by direct research)."
+        ),
+        "source": (
+            "Core Scientific/CoreWeave Denton TX expansion press release "
+            "(investors.corescientific.com); CoinDesk, 'Core Scientific Lands AMD AI "
+            "Deal As Bitcoin Mining Operation Winds Down', 2026-07-28; Yahoo Finance "
+            "coverage of Core Scientific's bitcoin-mining wind-down; user correction "
+            "(Sep 2026) that the 400MW is hosted, not owned, mining capacity."
         ),
     },
     "Hut 8": {
         "ai_hosting_mw": 949,
-        "btc_mining_mw": None,
+        "owned_btc_mining_mw": None,
+        "hosted_btc_mining_mw": 0,
         "note": (
             "ai_hosting_mw is Hut 8's company-wide contracted IT capacity (current_mw + "
-            "contracted_future_mw from POWER_CAPACITY). btc_mining_mw is NOT disclosed "
-            "separately - Hut 8 blends 'ASIC Compute, AI Cloud, Traditional Cloud' into "
-            "one revenue line and doesn't give a standalone legacy-mining MW figure - "
-            "treated as $0 here, understating Hut 8's total by whatever its ASIC mining "
-            "fleet is worth."
+            "contracted_future_mw from POWER_CAPACITY). owned_btc_mining_mw is NOT "
+            "disclosed separately - Hut 8 blends 'ASIC Compute, AI Cloud, Traditional "
+            "Cloud' into one revenue line and doesn't give a standalone legacy-mining MW "
+            "figure - treated as $0 here, understating Hut 8's total by whatever its "
+            "ASIC mining fleet is worth. Hut 8 mines with its own owned rigs (no "
+            "third-party hosting business), so hosted_btc_mining_mw is 0, not a missing "
+            "figure."
         ),
     },
     "TeraWulf": {
         "ai_hosting_mw": 839,
-        "btc_mining_mw": None,
+        "owned_btc_mining_mw": None,
+        "hosted_btc_mining_mw": 0,
         "note": (
             "ai_hosting_mw is current_mw + contracted_future_mw from POWER_CAPACITY (Lake "
-            "Mariner Fluidstack + Justified Data Campus Anthropic lease). btc_mining_mw is "
-            "NOT disclosed as a standalone figure - TeraWulf says it is 'repurposing "
-            "portions of its legacy bitcoin mining footprint' without quantifying what's "
-            "left - treated as $0 here, understating TeraWulf's total by any remaining "
-            "self-mining capacity."
+            "Mariner Fluidstack + Justified Data Campus Anthropic lease). "
+            "owned_btc_mining_mw is NOT disclosed as a standalone figure - TeraWulf says "
+            "it is 'repurposing portions of its legacy bitcoin mining footprint' without "
+            "quantifying what's left - treated as $0 here, understating TeraWulf's total "
+            "by any remaining self-mining capacity. TeraWulf mines with its own owned "
+            "rigs (no third-party hosting business), so hosted_btc_mining_mw is 0, not a "
+            "missing figure."
         ),
     },
     "Cipher Mining": {
         "ai_hosting_mw": 244,
-        "btc_mining_mw": 420,
+        "owned_btc_mining_mw": 420,
+        "hosted_btc_mining_mw": 0,
         "note": (
             "ai_hosting_mw is the Barber Lake Fluidstack/Google AI site (contracted_future_"
-            "mw from POWER_CAPACITY). btc_mining_mw (~420MW) is a STALE 2025 estimate "
-            "across Cipher's other sites (Odessa 150 + Black Pearl 150 + Alborz 40 + Bear "
-            "40 + Chief 40) - the only one of the 4 non-pure-play miners here with ANY "
-            "mining MW figure at all, but likely OVERSTATED since Black Pearl has since "
-            "started partially converting to AI capacity as of Q2 2026 (not yet "
-            "re-measured)."
+            "mw from POWER_CAPACITY). owned_btc_mining_mw (~420MW) is a STALE 2025 "
+            "estimate across Cipher's other sites (Odessa 150 + Black Pearl 150 + Alborz "
+            "40 + Bear 40 + Chief 40), all self-owned/self-operated mining, not hosting - "
+            "the only one of the non-pure-play companies here with ANY owned-mining MW "
+            "figure at all, but likely OVERSTATED since Black Pearl has since started "
+            "partially converting to AI capacity as of Q2 2026 (not yet re-measured). No "
+            "known third-party ASIC-hosting business, so hosted_btc_mining_mw is 0."
         ),
     },
     "CleanSpark": {
         "ai_hosting_mw": 175,
-        "btc_mining_mw": 808,
+        "owned_btc_mining_mw": 808,
+        "hosted_btc_mining_mw": 0,
         "note": (
-            "btc_mining_mw (808MW) is explicit and current - concurrent power drawn for "
-            "active mining, per CleanSpark's own August 2026 operational update. "
-            "ai_hosting_mw (175MW) is ONLY the explicit Sandersville lease - NOT the full "
-            "992MW contracted_future_mw from POWER_CAPACITY, since the remainder of that "
-            "992MW isn't broken out between further AI buildout and further mining "
-            "buildout - so CleanSpark's true AI capacity here may be understated if any "
-            "of that remainder turns out to be AI-designated."
+            "owned_btc_mining_mw (808MW) is explicit and current - concurrent power "
+            "drawn for CleanSpark's OWN mining rigs, per its own August 2026 operational "
+            "update; CleanSpark owns and operates its fleet rather than hosting "
+            "third-party miners, so hosted_btc_mining_mw is 0. ai_hosting_mw (175MW) is "
+            "ONLY the explicit Sandersville lease - NOT the full 992MW contracted_future_"
+            "mw from POWER_CAPACITY, since the remainder of that 992MW isn't broken out "
+            "between further AI buildout and further mining buildout - so CleanSpark's "
+            "true AI capacity here may be understated if any of that remainder turns out "
+            "to be AI-designated."
         ),
     },
 }

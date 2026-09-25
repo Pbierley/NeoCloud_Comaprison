@@ -80,19 +80,43 @@ DEBT_SEGMENT_COLORS = {
 }
 
 
+def _is_ai_segment_label(label: str) -> bool:
+    """
+    config.SEGMENT_REVENUE_SPLIT uses a different exact label per company
+    for its AI/HPC-hosting revenue line (Core Scientific: "AI/HPC Hosting
+    (Colocation)"; TeraWulf: "AI/HPC Hosting (HPC Lease)"; IREN: "AI Cloud
+    Services" - IREN's own income-statement line name, which doesn't
+    contain "AI/HPC" or "HPC" at all) - centralized here as one keyword
+    check so every "which segment is AI vs. mining" decision in the app
+    (chart coloring, AI-hosting-share calculations) stays in sync as new
+    companies/label spellings are added, rather than drifting across
+    several ad-hoc substring checks.
+    """
+    return any(kw in label for kw in ("AI/HPC", "Colocation", "HPC", "AI Cloud"))
+
+
 def _segment_revenue_color(label: str) -> str:
     """
-    config.SEGMENT_REVENUE_SPLIT uses slightly different segment label
-    strings per company (Core Scientific has 3 lines, TeraWulf has 2), so
-    rather than a static per-label dict, color by keyword: blue family for
-    any AI/HPC hosting line, amber/orange family for any bitcoin-mining
-    line, so the stacked chart reads the same way (blue = AI, amber =
-    mining) across every company that has this data.
+    Color by keyword via _is_ai_segment_label: blue family for any AI/HPC
+    hosting line, amber/orange family for any bitcoin-mining line, so the
+    stacked chart reads the same way (blue = AI, amber = mining) across
+    every company that has this data.
+
+    Hut 8 is the one exception with a genuinely 3-way (not AI-vs-mining)
+    segment split - see config.SEGMENT_REVENUE_SPLIT's doc-comment for why
+    its "Compute" line is deliberately NOT colored as either pure AI or pure
+    mining (it's an undisclosed blend of both) - "Digital Infrastructure"
+    and "Power" get their own distinct colors instead of falling into the
+    binary blue/amber scheme.
     """
-    if "AI/HPC" in label or "Colocation" in label or "HPC" in label:
+    if _is_ai_segment_label(label):
         return "#5B8DEF"
     if "Hosted Mining" in label:
         return "#F7D9A8"
+    if "Digital Infrastructure" in label:
+        return "#4FBDBA"
+    if "Power (Generation" in label:
+        return "#9AA5B1"
     return "#DD8A3A"
 
 
@@ -1425,16 +1449,18 @@ def render_comparison_view():
             "split (see the Single Company view for the dollar breakdown and sources): "
             "AI/HPC hosting revenue as a % of that company's total revenue each quarter. "
             "Not shown for Cipher Mining/CleanSpark (still 100% bitcoin mining revenue as "
-            "of the last check) or Hut 8 (mining doesn't appear as a revenue line at all "
-            "for it, so there's no comparable split) - see config.py's SEGMENT_REVENUE_"
-            "SPLIT for why."
+            "of the last check). Hut 8 has a real 3-segment $ breakdown on its own Single "
+            "Company page, but is excluded from this specific chart too, since its "
+            "'Compute' segment blends bitcoin mining and AI/GPU cloud without a disclosed "
+            "dollar split - there's no clean AI-only number to compute a share from. See "
+            "config.py's SEGMENT_REVENUE_SPLIT for the full explanation."
         )
 
         def _ai_hosting_share(name):
             seg_df, seg_cols = load_segment_revenue_df(name)
             if seg_df is None or seg_df.empty:
                 return None
-            ai_cols = [c for c in seg_cols if "AI/HPC" in c]
+            ai_cols = [c for c in seg_cols if _is_ai_segment_label(c)]
             if not ai_cols:
                 return None
             out = seg_df[["quarter_label", "period_end"]].copy()
@@ -1682,31 +1708,83 @@ def render_comparison_view():
     )
 
 
+def _hosted_mining_annualized_revenue(company: str):
+    """
+    Looks up `company`'s most recent quarter of hosted-bitcoin-mining
+    revenue from config.SEGMENT_REVENUE_SPLIT (the segment label containing
+    "Hosted Mining" - currently only Core Scientific's "Bitcoin Hosted
+    Mining" line matches) and annualizes it (x4) as a simple run-rate.
+
+    Returns None if this company has no such segment line at all, so the
+    calculator can tell "no hosted-mining revenue disclosed" apart from "$0
+    of hosted-mining revenue this quarter" - same "None means unknown, not
+    zero" convention used everywhere else in this app.
+
+    Why annualize a single quarter rather than trailing-4-quarters: hosted-
+    mining revenue at Core Scientific has been on a mild downtrend as
+    capacity converts to AI hosting (see SEGMENT_REVENUE_SPLIT), so a
+    trailing-4-quarter sum would overweight older, larger quarters relative
+    to the run-rate this MW figure reflects today. A single latest-quarter
+    run-rate is more consistent with the point-in-time MW snapshot it's
+    being divided by, at the cost of more quarter-to-quarter noise.
+    """
+    seg_df, seg_cols = load_segment_revenue_df(company)
+    if seg_df is None or seg_df.empty:
+        return None
+    hosted_cols = [c for c in seg_cols if "Hosted Mining" in c]
+    if not hosted_cols:
+        return None
+    latest = seg_df.iloc[-1]
+    return sum(latest[c] for c in hosted_cols) * 4
+
+
 def render_fair_value_calculator():
     """
     Fair Value Calculator page - lets the user set their own $/MW
     assumptions (defaulted from JPMorgan's 2026 sector re-basing, per
     config.JPMORGAN_MW_RATE_RANGES) and computes an implied fair value per
-    company as (AI/HPC MW x AI rate) + (bitcoin-mining MW x mining rate),
-    compared against live market cap.
+    company as (AI/HPC MW x AI rate) + (owned bitcoin-mining MW x mining
+    rate) + (hosted-mining revenue-multiple value), compared against live
+    market cap.
 
-    Deliberately a TWO-bucket simplification of JPM's actual THREE-tier
-    framework (see JPMORGAN_MW_RATE_RANGES's docstring) and deliberately
-    NOT a recommendation - see the extensive caveats rendered below the
-    table before reading too much into any single number here.
+    Deliberately a TWO-bucket $/MW simplification of JPM's actual
+    THREE-tier framework (see JPMORGAN_MW_RATE_RANGES's docstring) PLUS a
+    third bucket priced a completely different way - see below - and
+    deliberately NOT a recommendation - see the extensive caveats rendered
+    below the table before reading too much into any single number here.
+
+    On the third bucket (hosted bitcoin mining, e.g. Core Scientific's
+    ~400MW of third-party ASIC hosting): this is NOT priced with a $/MW
+    rate like the other two buckets. Direct research (Sep 2026) confirmed
+    no analyst report or comparable transaction publishes a $/MW benchmark
+    for bitcoin-mining hosting/colocation specifically - JPMorgan's
+    framework has a tier for AI/HPC hosting and a tier for OWNED bitcoin
+    mining, but nothing for "hosting bitcoin miners you don't own." Rather
+    than invent a $/MW figure with no basis, this bucket is priced off each
+    company's own disclosed hosted-mining REVENUE (see
+    _hosted_mining_annualized_revenue) times a user-adjustable revenue
+    multiple - a completely different (and much more directly evidenced)
+    method than the capacity-based $/MW approach used for the other two
+    buckets, appropriate for what's economically a small, fee-based
+    service business rather than a capacity-ownership bet.
     """
     st.subheader("Fair Value Calculator: $/MW Valuation Framework")
     st.caption(
-        "Modeled on how professional analysts increasingly value this sector - e.g. "
-        "JPMorgan's 2026 re-based framework, which prices contracted/deployed "
-        "critical-IT (AI/HPC) capacity at roughly $8-17M/MW depending on quality, "
-        "cloud-conversion capacity up to ~$19M/MW, and pure bitcoin-mining capacity at "
-        "just $1-2M/MW. This calculator simplifies JPM's first two tiers into one "
-        "'AI/HPC' band ($8-19M/MW) since the underlying MW data here doesn't cleanly "
-        "distinguish 'already-electrified mining site being converted' from "
-        "'purpose-built AI capacity' the way JPM's own per-site analysis presumably "
-        "does. Adjust the two rate sliders below to your own view - the defaults are "
-        "just the midpoint of JPM's reported ranges, not this app's recommendation."
+        "Modeled on how professional analysts increasingly value this sector, e.g. "
+        "JPMorgan's 2026 re-based framework, which prices contracted or deployed "
+        "critical-IT (AI/HPC) capacity at roughly $8 to $17M per MW depending on "
+        "quality, cloud-conversion capacity up to about $19M per MW, and pure owned "
+        "bitcoin-mining capacity at just $1 to $2M per MW. This calculator simplifies "
+        "JPMorgan's first two tiers into one AI/HPC band ($8 to $19M per MW), since "
+        "the underlying MW data here doesn't cleanly distinguish an already-"
+        "electrified mining site being converted from purpose-built AI capacity the "
+        "way JPMorgan's own per-site analysis presumably does. Adjust the two rate "
+        "sliders below to your own view; the defaults are just the midpoint of "
+        "JPMorgan's reported ranges, not this app's recommendation. A third bucket, "
+        "hosted bitcoin mining (a company hosting third-party-owned ASIC miners for "
+        "a fee, e.g. about 400MW of Core Scientific's portfolio), is priced "
+        "separately below, since it's a fee-based service business rather than a "
+        "capacity-ownership bet, and no $/MW benchmark exists for it anywhere."
     )
 
     ai_range = JPMORGAN_MW_RATE_RANGES["ai_hosting"]
@@ -1721,7 +1799,7 @@ def render_fair_value_calculator():
         key="fvc_ai_rate",
     )
     btc_rate = r_col2.slider(
-        "Bitcoin mining capacity ($M per MW)",
+        "Owned bitcoin mining capacity ($M per MW)",
         min_value=btc_range["low"],
         max_value=btc_range["high"],
         value=btc_range["default"],
@@ -1729,20 +1807,53 @@ def render_fair_value_calculator():
         key="fvc_btc_rate",
     )
 
+    st.markdown("**Hosted bitcoin mining (revenue-multiple method, not $/MW)**")
+    st.caption(
+        "No analyst report or comparable transaction publishes a $/MW rate for "
+        "bitcoin-ASIC-hosting-as-a-service (confirmed by direct research, Sep 2026) - "
+        "it's a real but unbenchmarked category, so instead of a $/MW slider, this "
+        "prices it off the company's own disclosed hosted-mining revenue (annualized "
+        "from its most recent quarter - see config.SEGMENT_REVENUE_SPLIT) times a "
+        "revenue multiple YOU choose. There's no market comp behind the default below - "
+        "it's a placeholder, not a benchmark. Treat any number this produces as much "
+        "softer than the two $/MW buckets above."
+    )
+    hosted_multiple = st.slider(
+        "Hosted-mining revenue multiple (x annualized revenue)",
+        min_value=1.0,
+        max_value=10.0,
+        value=4.0,
+        step=0.5,
+        key="fvc_hosted_multiple",
+    )
+
     rows = []
     missing_mining_data = []
+    missing_hosted_data = []
     for name in COMPANIES:
         purpose = MW_BY_PURPOSE.get(name)
         if not purpose:
             continue
         ai_mw = purpose.get("ai_hosting_mw") or 0
-        btc_mw = purpose.get("btc_mining_mw")
-        if btc_mw is None:
+        owned_btc_mw = purpose.get("owned_btc_mining_mw")
+        if owned_btc_mw is None:
             missing_mining_data.append(name)
-            btc_mw = 0
+            owned_btc_mw = 0
+        hosted_btc_mw = purpose.get("hosted_btc_mining_mw") or 0
+
         ai_value = ai_mw * ai_rate * 1_000_000
-        btc_value = btc_mw * btc_rate * 1_000_000
-        fair_value = ai_value + btc_value
+        owned_btc_value = owned_btc_mw * btc_rate * 1_000_000
+
+        hosted_value = 0.0
+        hosted_revenue = None
+        if hosted_btc_mw:
+            hosted_revenue = _hosted_mining_annualized_revenue(name)
+            if hosted_revenue is None:
+                missing_hosted_data.append(name)
+            else:
+                hosted_value = hosted_revenue * hosted_multiple
+
+        fair_value = ai_value + owned_btc_value + hosted_value
         ticker = TICKERS.get(name)
         market_cap = load_market_cap(ticker) if ticker else None
         upside = ((fair_value / market_cap) - 1) * 100 if market_cap else None
@@ -1750,9 +1861,11 @@ def render_fair_value_calculator():
             {
                 "Company": name,
                 "AI/HPC MW": ai_mw,
-                "BTC Mining MW": purpose.get("btc_mining_mw"),
+                "Owned BTC Mining MW": purpose.get("owned_btc_mining_mw"),
+                "Hosted BTC Mining MW": hosted_btc_mw if hosted_btc_mw else None,
                 "Implied AI Value": ai_value,
-                "Implied Mining Value": btc_value,
+                "Implied Owned Mining Value": owned_btc_value,
+                "Implied Hosted Mining Value": hosted_value,
                 "Implied Fair Value": fair_value,
                 "Market Cap": market_cap,
                 "Implied Upside/Downside": upside,
@@ -1762,11 +1875,15 @@ def render_fair_value_calculator():
     calc_df = pd.DataFrame(rows)
     display_df = calc_df.copy()
     display_df["AI/HPC MW"] = display_df["AI/HPC MW"].apply(format_mw)
-    display_df["BTC Mining MW"] = display_df["BTC Mining MW"].apply(
+    display_df["Owned BTC Mining MW"] = display_df["Owned BTC Mining MW"].apply(
         lambda v: format_mw(v) if pd.notna(v) else "not disclosed"
     )
+    display_df["Hosted BTC Mining MW"] = display_df["Hosted BTC Mining MW"].apply(
+        lambda v: format_mw(v) if pd.notna(v) else "-"
+    )
     display_df["Implied AI Value"] = display_df["Implied AI Value"].apply(format_usd)
-    display_df["Implied Mining Value"] = display_df["Implied Mining Value"].apply(format_usd)
+    display_df["Implied Owned Mining Value"] = display_df["Implied Owned Mining Value"].apply(format_usd)
+    display_df["Implied Hosted Mining Value"] = display_df["Implied Hosted Mining Value"].apply(format_usd)
     display_df["Implied Fair Value"] = display_df["Implied Fair Value"].apply(format_usd)
     display_df["Market Cap"] = display_df["Market Cap"].apply(format_usd)
     display_df["Implied Upside/Downside"] = display_df["Implied Upside/Downside"].apply(
@@ -1776,11 +1893,19 @@ def render_fair_value_calculator():
 
     if missing_mining_data:
         st.caption(
-            f"⚠️ {', '.join(missing_mining_data)}: no standalone bitcoin-mining MW figure "
-            "is disclosed anywhere for this company (confirmed by direct research, not "
-            "just missing here) - its mining contribution is treated as $0 above, which "
-            "UNDERSTATES its implied fair value by whatever residual mining capacity it "
-            "still has. See config.py's MW_BY_PURPOSE for what IS captured for each one."
+            f"⚠️ {', '.join(missing_mining_data)}: no standalone OWNED bitcoin-mining MW "
+            "figure is disclosed anywhere for this company (confirmed by direct "
+            "research, not just missing here) - its owned-mining contribution is "
+            "treated as $0 above, which UNDERSTATES its implied fair value by whatever "
+            "residual owned mining capacity it still has. See config.py's MW_BY_PURPOSE "
+            "for what IS captured for each one."
+        )
+    if missing_hosted_data:
+        st.caption(
+            f"⚠️ {', '.join(missing_hosted_data)}: has disclosed hosted-mining MW but no "
+            "matching hosted-mining revenue line in config.SEGMENT_REVENUE_SPLIT yet, so "
+            "its hosted-mining contribution is treated as $0 above - an inconsistency to "
+            "fix in config.py rather than a real data gap."
         )
 
     chart_rows = calc_df.dropna(subset=["Market Cap"])
@@ -1823,16 +1948,25 @@ def render_fair_value_calculator():
 
     with st.expander("Read before using this for anything real"):
         st.markdown(
-            "- **Not investment advice, and not JPMorgan's own model** - this is a "
-            "simplified, two-bucket reconstruction built from press coverage of their "
-            "framework, using MW figures this app manually compiled from public "
-            "disclosures. It is not their proprietary per-site analysis.\n"
+            "- **Not investment advice, and not JPMorgan's own model** - the AI/HPC and "
+            "owned-mining buckets are a simplified reconstruction built from press "
+            "coverage of JPMorgan's framework, using MW figures this app manually "
+            "compiled from public disclosures. It is not their proprietary per-site "
+            "analysis, and the hosted-mining bucket isn't from JPMorgan or anyone else's "
+            "framework at all - it's this app's own revenue-multiple construction, "
+            "because no external $/MW benchmark for that category exists (see above).\n"
             "- **MW figures are a dated snapshot** (see the Power Capacity section - "
             "each company as of its own most recent disclosure, dates vary) using only "
             "current + contracted-future MW, deliberately excluding pipeline/diligence-"
             "stage capacity as too speculative to price.\n"
-            "- **Several companies' mining MW is unknown, not zero** - flagged above; "
-            "their implied fair value is a floor, not a full picture.\n"
+            "- **Several companies' OWNED mining MW is unknown, not zero** - flagged "
+            "above; their implied fair value is a floor, not a full picture.\n"
+            "- **The hosted-mining revenue multiple is a placeholder, not a benchmark** "
+            "- unlike the two $/MW sliders (anchored to JPMorgan's published ranges), "
+            "there is no market comp behind the hosted-mining multiple slider's default "
+            "or range at all. It exists so you can see the shape of the calculation and "
+            "substitute your own view, not because 4x (or 1-10x) is defensible from any "
+            "outside source.\n"
             "- **Uses Market Cap, not Enterprise Value** - ignores each company's net "
             "debt/cash entirely, unlike a true EV-based $/MW comparison.\n"
             "- **A single blended rate per bucket, applied to every company** - JPM's "
@@ -2031,8 +2165,15 @@ else:
     seg_df, seg_cols = load_segment_revenue_df(company)
     if seg_df is not None and not seg_df.empty:
         st.divider()
-        st.subheader(f"{company} - Revenue Mix: Bitcoin Mining vs. AI/HPC Hosting")
-        st.caption(
+        ai_cols = [c for c in seg_cols if _is_ai_segment_label(c)]
+        has_clean_split = bool(ai_cols)
+        header = (
+            f"{company} - Revenue Mix: Bitcoin Mining vs. AI/HPC Hosting"
+            if has_clean_split
+            else f"{company} - Revenue by Segment"
+        )
+        st.subheader(header)
+        caption = (
             "Manually compiled from this company's own filed income-statement revenue "
             "line items (earnings-release exhibits / 10-Q face financials), NOT a live "
             "SEC XBRL pull - revenue broken out by line of business is dimensional XBRL "
@@ -2042,14 +2183,25 @@ else:
             "for the exact source of each quarter and which companies were deliberately "
             "left out (no clean split exists for them yet)."
         )
+        if not has_clean_split:
+            caption += (
+                f" {company} does NOT disclose a clean bitcoin-mining-vs-AI dollar split "
+                "- the segments below are its own real reported business lines, but at "
+                "least one blends bitcoin mining and AI/HPC revenue together without "
+                "breaking out the dollar amounts (see config.py for exactly which line "
+                "and why)."
+            )
+        st.caption(caption)
 
         latest_seg = seg_df.iloc[-1]
-        ai_cols = [c for c in seg_cols if "AI/HPC" in c]
         ai_total = sum(latest_seg[c] for c in ai_cols) if ai_cols else 0
         ai_share = (ai_total / latest_seg["total"] * 100) if latest_seg["total"] else float("nan")
         s_col1, s_col2 = st.columns(2)
         s_col1.metric(f"Total revenue ({latest_seg['quarter_label']})", format_usd(latest_seg["total"]))
-        s_col2.metric("Share from AI/HPC hosting", f"{ai_share:,.0f}%" if pd.notna(ai_share) else "-")
+        if has_clean_split:
+            s_col2.metric("Share from AI/HPC hosting", f"{ai_share:,.0f}%" if pd.notna(ai_share) else "-")
+        else:
+            s_col2.metric("Share from AI/HPC hosting", "Not disclosed")
 
         seg_fig = go.Figure()
         for label in seg_cols:
