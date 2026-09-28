@@ -1555,9 +1555,9 @@ def render_comparison_view():
         st.caption(
             "Market Cap ÷ MW uses live market cap over CURRENT + CONTRACTED (not "
             "pipeline) MW - the closest read on how the market is pricing each dollar of "
-            "committed capacity, conceptually the inverse of the $/MW figures sell-side "
+            "committed capacity, conceptually the inverse of the \\$/MW figures sell-side "
             "analysts assign when setting price targets (e.g. JPMorgan's 2026 framework "
-            "cited $8-19M/MW depending on capacity quality). Not a precise apples-to-"
+            "cited \\$8-19M/MW depending on capacity quality). Not a precise apples-to-"
             "apples multiple - market cap is live, MW figures are each company's own "
             "as-of date above, and capacity quality/counterparty credit varies a lot "
             "across these names (see the earlier valuation-methodology discussion)."
@@ -1742,10 +1742,21 @@ def render_fair_value_calculator():
     """
     Fair Value Calculator page - lets the user set their own $/MW
     assumptions (defaulted from JPMorgan's 2026 sector re-basing, per
-    config.JPMORGAN_MW_RATE_RANGES) and computes an implied fair value per
-    company as (AI/HPC MW x AI rate) + (owned bitcoin-mining MW x mining
-    rate) + (hosted-mining revenue-multiple value), compared against live
-    market cap.
+    config.JPMORGAN_MW_RATE_RANGES) and computes an Implied Enterprise Value
+    per company as (AI/HPC MW x AI rate) + (owned bitcoin-mining MW x mining
+    rate) + (hosted-mining revenue-multiple value).
+
+    The $/MW rates this is built from are asset/capacity multiples, i.e.
+    enterprise-value multiples, not equity multiples - they price what the
+    capacity itself is worth, independent of how it's financed. So this is
+    bridged to an Implied EQUITY Value the same way any EV figure is turned
+    into an equity one: Implied Equity Value = Implied Enterprise Value +
+    Cash - Total Debt (reusing load_enterprise_value's cash/debt figures,
+    the same ones behind the Compare Companies page's Valuation Snapshot).
+    THAT'S what gets compared against live Market Cap - comparing the raw
+    capacity-based Implied Enterprise Value straight to Market Cap would
+    silently ignore leverage entirely, making a heavily-indebted company
+    look just as over/undervalued as an otherwise-identical debt-free one.
 
     Deliberately a TWO-bucket $/MW simplification of JPM's actual
     THREE-tier framework (see JPMORGAN_MW_RATE_RANGES's docstring) PLUS a
@@ -1768,30 +1779,31 @@ def render_fair_value_calculator():
     buckets, appropriate for what's economically a small, fee-based
     service business rather than a capacity-ownership bet.
     """
-    st.subheader("Fair Value Calculator: $/MW Valuation Framework")
+    st.subheader("Fair Value Calculator: \\$/MW Valuation Framework")
     st.caption(
         "Modeled on how professional analysts increasingly value this sector, e.g. "
         "JPMorgan's 2026 re-based framework, which prices contracted or deployed "
-        "critical-IT (AI/HPC) capacity at roughly $8 to $17M per MW depending on "
-        "quality, cloud-conversion capacity up to about $19M per MW, and pure owned "
-        "bitcoin-mining capacity at just $1 to $2M per MW. This calculator simplifies "
-        "JPMorgan's first two tiers into one AI/HPC band ($8 to $19M per MW), since "
-        "the underlying MW data here doesn't cleanly distinguish an already-"
-        "electrified mining site being converted from purpose-built AI capacity the "
-        "way JPMorgan's own per-site analysis presumably does. Adjust the two rate "
-        "sliders below to your own view; the defaults are just the midpoint of "
-        "JPMorgan's reported ranges, not this app's recommendation. A third bucket, "
-        "hosted bitcoin mining (a company hosting third-party-owned ASIC miners for "
-        "a fee, e.g. about 400MW of Core Scientific's portfolio), is priced "
-        "separately below, since it's a fee-based service business rather than a "
-        "capacity-ownership bet, and no $/MW benchmark exists for it anywhere."
+        "critical-IT (AI/HPC) capacity at roughly \\$8 to \\$17M per MW depending on "
+        "quality, cloud-conversion capacity up to about \\$19M per MW, and pure owned "
+        "bitcoin-mining capacity at just \\$1 to \\$2M per MW. This calculator "
+        "simplifies JPMorgan's first two tiers into one AI/HPC band (\\$8 to \\$19M "
+        "per MW), since the underlying MW data here doesn't cleanly distinguish an "
+        "already-electrified mining site being converted from purpose-built AI "
+        "capacity the way JPMorgan's own per-site analysis presumably does. Adjust "
+        "the two rate sliders below to your own view; the defaults are just the "
+        "midpoint of JPMorgan's reported ranges, not this app's recommendation. A "
+        "third bucket, hosted bitcoin mining (a company hosting third-party-owned "
+        "ASIC miners for a fee, e.g. about 400MW of Core Scientific's portfolio), is "
+        "priced separately below, since it's a fee-based service business rather "
+        "than a capacity-ownership bet, and no \\$/MW benchmark exists for it "
+        "anywhere."
     )
 
     ai_range = JPMORGAN_MW_RATE_RANGES["ai_hosting"]
     btc_range = JPMORGAN_MW_RATE_RANGES["btc_mining"]
     r_col1, r_col2 = st.columns(2)
     ai_rate = r_col1.slider(
-        "AI/HPC capacity ($M per MW)",
+        "AI/HPC capacity (\\$M per MW)",
         min_value=ai_range["low"],
         max_value=ai_range["high"],
         value=ai_range["default"],
@@ -1799,7 +1811,7 @@ def render_fair_value_calculator():
         key="fvc_ai_rate",
     )
     btc_rate = r_col2.slider(
-        "Owned bitcoin mining capacity ($M per MW)",
+        "Owned bitcoin mining capacity (\\$M per MW)",
         min_value=btc_range["low"],
         max_value=btc_range["high"],
         value=btc_range["default"],
@@ -1807,16 +1819,16 @@ def render_fair_value_calculator():
         key="fvc_btc_rate",
     )
 
-    st.markdown("**Hosted bitcoin mining (revenue-multiple method, not $/MW)**")
+    st.markdown("**Hosted bitcoin mining (revenue-multiple method, not \\$/MW)**")
     st.caption(
-        "No analyst report or comparable transaction publishes a $/MW rate for "
+        "No analyst report or comparable transaction publishes a \\$/MW rate for "
         "bitcoin-ASIC-hosting-as-a-service (confirmed by direct research, Sep 2026) - "
-        "it's a real but unbenchmarked category, so instead of a $/MW slider, this "
+        "it's a real but unbenchmarked category, so instead of a \\$/MW slider, this "
         "prices it off the company's own disclosed hosted-mining revenue (annualized "
         "from its most recent quarter - see config.SEGMENT_REVENUE_SPLIT) times a "
-        "revenue multiple YOU choose. There's no market comp behind the default below - "
-        "it's a placeholder, not a benchmark. Treat any number this produces as much "
-        "softer than the two $/MW buckets above."
+        "revenue multiple YOU choose. There's no market comp behind the default below "
+        "- it's a placeholder, not a benchmark. Treat any number this produces as "
+        "much softer than the two \\$/MW buckets above."
     )
     hosted_multiple = st.slider(
         "Hosted-mining revenue multiple (x annualized revenue)",
@@ -1830,7 +1842,8 @@ def render_fair_value_calculator():
     rows = []
     missing_mining_data = []
     missing_hosted_data = []
-    for name in COMPANIES:
+    missing_net_debt_data = []
+    for name, cik in COMPANIES.items():
         purpose = MW_BY_PURPOSE.get(name)
         if not purpose:
             continue
@@ -1853,10 +1866,22 @@ def render_fair_value_calculator():
             else:
                 hosted_value = hosted_revenue * hosted_multiple
 
-        fair_value = ai_value + owned_btc_value + hosted_value
+        implied_ev = ai_value + owned_btc_value + hosted_value
+
         ticker = TICKERS.get(name)
-        market_cap = load_market_cap(ticker) if ticker else None
-        upside = ((fair_value / market_cap) - 1) * 100 if market_cap else None
+        ev_info = load_enterprise_value(cik, ticker)
+        market_cap = ev_info["market_cap"]
+        cash = ev_info["cash"]
+        total_debt = ev_info["total_debt"]
+        if cash is None or total_debt is None:
+            missing_net_debt_data.append(name)
+            implied_equity_value = None
+        else:
+            implied_equity_value = implied_ev + cash - total_debt
+
+        upside = None
+        if implied_equity_value is not None and market_cap:
+            upside = ((implied_equity_value / market_cap) - 1) * 100
         rows.append(
             {
                 "Company": name,
@@ -1866,7 +1891,10 @@ def render_fair_value_calculator():
                 "Implied AI Value": ai_value,
                 "Implied Owned Mining Value": owned_btc_value,
                 "Implied Hosted Mining Value": hosted_value,
-                "Implied Fair Value": fair_value,
+                "Implied Enterprise Value": implied_ev,
+                "Cash": cash,
+                "Total Debt": total_debt,
+                "Implied Equity Value": implied_equity_value,
                 "Market Cap": market_cap,
                 "Implied Upside/Downside": upside,
             }
@@ -1881,44 +1909,68 @@ def render_fair_value_calculator():
     display_df["Hosted BTC Mining MW"] = display_df["Hosted BTC Mining MW"].apply(
         lambda v: format_mw(v) if pd.notna(v) else "-"
     )
-    display_df["Implied AI Value"] = display_df["Implied AI Value"].apply(format_usd)
-    display_df["Implied Owned Mining Value"] = display_df["Implied Owned Mining Value"].apply(format_usd)
-    display_df["Implied Hosted Mining Value"] = display_df["Implied Hosted Mining Value"].apply(format_usd)
-    display_df["Implied Fair Value"] = display_df["Implied Fair Value"].apply(format_usd)
-    display_df["Market Cap"] = display_df["Market Cap"].apply(format_usd)
+    for col in (
+        "Implied AI Value",
+        "Implied Owned Mining Value",
+        "Implied Hosted Mining Value",
+        "Implied Enterprise Value",
+        "Cash",
+        "Total Debt",
+        "Implied Equity Value",
+        "Market Cap",
+    ):
+        display_df[col] = display_df[col].apply(lambda v: format_usd(v) if pd.notna(v) else "not disclosed")
     display_df["Implied Upside/Downside"] = display_df["Implied Upside/Downside"].apply(
         lambda v: f"{v:+,.0f}%" if pd.notna(v) else "-"
     )
     st.dataframe(display_df, use_container_width=True, hide_index=True)
+    st.caption(
+        "Implied Equity Value = Implied Enterprise Value + Cash - Total Debt, so it's "
+        "compared against Market Cap on an apples-to-apples EQUITY basis rather than "
+        "comparing a capacity-based enterprise value straight to market cap (which "
+        "ignores each company's leverage entirely - a highly levered miner and an "
+        "unlevered one with the same implied capacity value would otherwise look "
+        "identically over/undervalued, which isn't right). Cash and Total Debt are each "
+        "company's latest SEC-reported figures (see the Compare Companies page's "
+        "Valuation Snapshot for the same numbers with their as-of dates) - a quarterly "
+        "snapshot, not live, so it can lag a recent capital raise, buyback, or debt "
+        "paydown by up to a quarter."
+    )
+    if missing_net_debt_data:
+        st.caption(
+            f"⚠️ {', '.join(missing_net_debt_data)}: cash and/or total debt aren't both "
+            "available yet (see the Valuation Snapshot section for why), so no Implied "
+            "Equity Value or Implied Upside/Downside can be computed for it above."
+        )
 
     if missing_mining_data:
         st.caption(
             f"⚠️ {', '.join(missing_mining_data)}: no standalone OWNED bitcoin-mining MW "
             "figure is disclosed anywhere for this company (confirmed by direct "
             "research, not just missing here) - its owned-mining contribution is "
-            "treated as $0 above, which UNDERSTATES its implied fair value by whatever "
-            "residual owned mining capacity it still has. See config.py's MW_BY_PURPOSE "
-            "for what IS captured for each one."
+            "treated as \\$0 above, which UNDERSTATES its implied fair value by "
+            "whatever residual owned mining capacity it still has. See config.py's "
+            "MW_BY_PURPOSE for what IS captured for each one."
         )
     if missing_hosted_data:
         st.caption(
             f"⚠️ {', '.join(missing_hosted_data)}: has disclosed hosted-mining MW but no "
-            "matching hosted-mining revenue line in config.SEGMENT_REVENUE_SPLIT yet, so "
-            "its hosted-mining contribution is treated as $0 above - an inconsistency to "
-            "fix in config.py rather than a real data gap."
+            "matching hosted-mining revenue line in config.SEGMENT_REVENUE_SPLIT yet, "
+            "so its hosted-mining contribution is treated as \\$0 above - an "
+            "inconsistency to fix in config.py rather than a real data gap."
         )
 
-    chart_rows = calc_df.dropna(subset=["Market Cap"])
+    chart_rows = calc_df.dropna(subset=["Market Cap", "Implied Equity Value"])
     if not chart_rows.empty:
         fv_fig = go.Figure()
         fv_fig.add_trace(
             go.Bar(
                 x=chart_rows["Company"],
-                y=chart_rows["Implied Fair Value"],
-                name="Implied Fair Value",
+                y=chart_rows["Implied Equity Value"],
+                name="Implied Equity Value",
                 marker_color=ACCENT,
-                hovertemplate="%{x}<br>Implied Fair Value: %{customdata}<extra></extra>",
-                customdata=[format_usd(v) for v in chart_rows["Implied Fair Value"]],
+                hovertemplate="%{x}<br>Implied Equity Value: %{customdata}<extra></extra>",
+                customdata=[format_usd(v) for v in chart_rows["Implied Equity Value"]],
             )
         )
         fv_fig.add_trace(
@@ -1932,7 +1984,7 @@ def render_fair_value_calculator():
             )
         )
         fv_fig.update_layout(
-            title="Implied Fair Value vs. Market Cap",
+            title="Implied Equity Value vs. Market Cap",
             xaxis_title=None,
             yaxis_title="USD",
             plot_bgcolor="rgba(0,0,0,0)",
@@ -1945,6 +1997,9 @@ def render_fair_value_calculator():
             height=440,
         )
         st.plotly_chart(fv_fig, use_container_width=True)
+        if len(chart_rows) < len(calc_df):
+            excluded = [n for n in calc_df["Company"] if n not in set(chart_rows["Company"])]
+            st.caption(f"Not shown above (missing market cap, cash, or debt data): {', '.join(excluded)}.")
 
     with st.expander("Read before using this for anything real"):
         st.markdown(
@@ -1954,7 +2009,7 @@ def render_fair_value_calculator():
             "compiled from public disclosures. It is not their proprietary per-site "
             "analysis, and the hosted-mining bucket isn't from JPMorgan or anyone else's "
             "framework at all - it's this app's own revenue-multiple construction, "
-            "because no external $/MW benchmark for that category exists (see above).\n"
+            "because no external \\$/MW benchmark for that category exists (see above).\n"
             "- **MW figures are a dated snapshot** (see the Power Capacity section - "
             "each company as of its own most recent disclosure, dates vary) using only "
             "current + contracted-future MW, deliberately excluding pipeline/diligence-"
@@ -1962,13 +2017,16 @@ def render_fair_value_calculator():
             "- **Several companies' OWNED mining MW is unknown, not zero** - flagged "
             "above; their implied fair value is a floor, not a full picture.\n"
             "- **The hosted-mining revenue multiple is a placeholder, not a benchmark** "
-            "- unlike the two $/MW sliders (anchored to JPMorgan's published ranges), "
+            "- unlike the two \\$/MW sliders (anchored to JPMorgan's published ranges), "
             "there is no market comp behind the hosted-mining multiple slider's default "
             "or range at all. It exists so you can see the shape of the calculation and "
             "substitute your own view, not because 4x (or 1-10x) is defensible from any "
             "outside source.\n"
-            "- **Uses Market Cap, not Enterprise Value** - ignores each company's net "
-            "debt/cash entirely, unlike a true EV-based $/MW comparison.\n"
+            "- **Net debt bridge uses each company's LATEST quarterly cash/debt "
+            "figures** - a real capital raise, buyback, or debt paydown since that "
+            "filing won't show up here until the next quarter's 10-Q/10-K is filed, "
+            "so Implied Equity Value can lag reality more than the (daily-updating) "
+            "Market Cap it's compared against.\n"
             "- **A single blended rate per bucket, applied to every company** - JPM's "
             "own framework applies COMPANY-SPECIFIC rates within each range based on "
             "capacity quality and counterparty credit (e.g. an investment-grade "

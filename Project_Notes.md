@@ -1,0 +1,24 @@
+* Need to go the next step and determine the following
+- what is the cost basis on the gpus
+    - this is important because names like nebius that entered the space earlier:
+        - Mightve boughten these gpu's at lower costs than what neoclouds are buying them for now
+- whats the age of these gpus?
+    - this indicates how long these gpus have left in their lifespan
+    - also can indicate how much of these gpus have been earned back
+- the simple math of a neocloud is as follows
+    - Buy a GPU for 25k 
+    - rent out GPU for $100 / day ( at 100% utilization) closer to say $85 a day / 30k /yr
+    - GPU uses .7kw + cooling ~ 1kw @ ~.05 c/kWh = $1.20 a day per GPU / ~$500 yr
+    - borrow the cost at 8% a year ( makes GPU cost closer to 37k) or 2k a year in interest ($7300/yr in principal + interest)
+    - GPUS make up ~60-70% of datacenter cost we'll say 60% for conservative view
+    - 25k gpu -> 17k per GPU in infastructure 
+    - also important to note that infastructure is being financed by debt at say that 8% rate
+    - Infastructure has a much longer life span then GPU so we'll give it a 20yr lifespan even though its usually 39 yr dep sch
+    - so that 17k in infastructure at 10yr loan comes out to 37k in total costs or 3.7k a year
+    - so true revenue per GPU comes out to rev - lost utilization - interest & principal - electricity - building and inf inc interest - Op expenses
+    - so $30,000/ yr  - $7300 - $3,700 - $500 - op expenses
+    - $18,500 - operating expenses ( 15% of total rev) (15% $30,000)
+    - $18,500 - $4500
+    - $14,000 
+    - ^ that is the total number of total of dollars earnings per GPU After GPU costs Infastructure costs, electricity, and other operating expenses given a 5yr dep on GPUs, 10 yr dep on infastructure and 8% debt financing 
+
